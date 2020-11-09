@@ -1,6 +1,6 @@
 <?php
 
-$config = require_once './config.php';
+$config = require __DIR__ . '/config.php';
 
 function sanitize_url(string $url)
 {
@@ -40,7 +40,6 @@ function validate_code($code)
 
 function generate_code($url)
 {
-
     global $config;
 
     $charset = $config['charset'];
@@ -110,28 +109,23 @@ function int2string($num, string $chars): string
 }
 
 
-function render_template($template, $data) 
+function render_template($template, $data=[]) 
 {
-
     ob_start();
 
-    include($template);
+    include(__DIR__ . $template);
 
     $content = ob_get_contents();
 
     ob_end_clean();
 
     return $content;
+}
 
-    // $data = $data ?? [];
 
-    // foreach ($data as $key => $value) {
-    //     $pattern = "/\{\{\s*$key\s*\}\}/";
+function wants_json($request)
+{
 
-    //     $template = preg_replace($pattern, $value ?? '', $template);
-    // }
-
-    // return $template;
 }
 
 
