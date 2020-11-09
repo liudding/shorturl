@@ -1,23 +1,23 @@
 <?php
 
-$config = require_once './config.php';
+$config = require __DIR__ . '/config.php';
 
 function db()
 {
-    global $db;
+    static $db;
     global $config;
 
     if ($db) {
         return $db;
     }
 
-    $dsn = "{$config['db']['driver']}:host={$config['db']['host']};dbname={$config['db']['name']}";
+    $dsn = "{$config['db']['driver']}:host={$config['db']['host']};dbname={$config['db']['database']}";
 
     try {
         $db = new PDO($dsn, $config['db']['user'], $config['db']['password']);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (PDOException $e) {
-        new \Exception('数据库连接失败');
+        throw new \Exception('数据库连接失败: ' . $e->getMessage());
     }
 
     return $db;
@@ -25,7 +25,14 @@ function db()
 
 function find_shorturl($code)
 {
-    $sql = 'SELECT code, url  FROM `short_urls` WHERE binary code= :code';
+    global $config;
+
+    if ($config['case_sensitive']) {
+        $sql = 'SELECT code, url  FROM `short_urls` WHERE binary code= :code';
+    } else {
+        $sql = 'SELECT code, url  FROM `short_urls` WHERE code= :code';
+    }
+    
 
     $stmt = db()->prepare($sql);
     $stmt->execute([":code" => $code]);
