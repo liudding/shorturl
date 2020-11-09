@@ -2,7 +2,10 @@
 
 use RingCentral\Psr7\Response;
 
-require_once './db.php';
+$config = require_once __DIR__. '/config.php';
+require_once __DIR__ . '/helpers.php';
+require_once __DIR__. '/db.php';
+
 
 function initializer($context)
 {
@@ -11,30 +14,44 @@ function initializer($context)
 
 function handler($request, $context): Response
 {
+	try {
+		return handle($request, $context);
+	} catch (Exception $e) {
+		return respond_json($e);
+	}
+}
+
+function handle($request, $context): Response
+{
     $uri = $request->getAttribute('requestURI');
     $uri = trim($uri, '/');
 
-    $method = $request->getMethod();
+	$method = $request->getMethod();
+
+	$uri = str_replace('2016-08-15/proxy/shorturl/shorturl', '', $uri);
+	
+	// return respond_json($uri);
 
     // TODO: throttle
 
-    if ($uri === 'admin') {
+    if ($uri === '/admin') {
         // return
     }
 
-    if ($uri === 'view/shortener') {
-        // if ($method === 'GET') {
-        //     if ()
-        // }
-
+    if ($uri === '/view/shortener') {
+        if ($method === 'GET') {
+            return respond_shortener_page();
+        } else if ($method === 'POST') {
+			return shortener_submit($request);
+		}
     }
 
-    if ($uri === 'api/make') {
+    if ($uri === '/api/make') {
         $data = $request->getQueryParams();
 
         $code = make($data['url'], $data['code'] ?? null);
 
-        if (wants_json()) {
+        if (wants_json($request)) {
             return respond_json($code);
         } else {
             return respond_view($code);
@@ -42,19 +59,20 @@ function handler($request, $context): Response
     }
 
     // 访问 short url
-    return visit($uri, $request);
+    return visit_shorturl($uri, $request);
 }
 
-function visit($code, $request)
+
+function visit_shorturl($code, $request)
 {
     if (empty($code)) {
-        return respond_invalid_view();
+        return respond_invalid_page();
     }
 
     $short = find_shorturl($code);
 
     if (!$short) {
-        return respond_invalid_view();
+        return respond_invalid_page();
     }
 
     log_visit($short, $request);
@@ -71,7 +89,7 @@ function visit($code, $request)
  */
 function make($url, $code = null)
 {
-    $url = sanitize_url();
+    $url = sanitize_url($url);
 
     if (!validate_url($url)) {
         return;
@@ -109,14 +127,6 @@ function make($url, $code = null)
     return $result;
 }
 
-function shortener_view()
-{
-    return respond_view(render_template(view_shortener_page(), [
-        'url' => '',
-        'result' => '',
-    ]));
-}
-
 function shortener_submit($request)
 {
     $body = $request->getBody()->getContents();
@@ -124,22 +134,30 @@ function shortener_submit($request)
     parse_str(trim($body), $data);
 
     if (!validate_url($data['url'])) {
-        // todo: error message
-
-        return respond_view(render_template(view_shortener_page(), [
+		// todo: error message
+		
+		return respond_shortener_page([
             'result' => '请输入有效的链接',
             'url' => $data['url'],
             'errmsg' => '请输入有效的链接',
-        ]));
+        ]);
     }
 
-    $shortUrl = make($data['url']);
-
-    return respond_view(render_template(view_shortener_page(), [
-        'result' => $shortUrl['code'],
+	$shortUrl = make($data['url']);
+	
+	return respond_shortener_page([
+		'result' => $shortUrl['code'],
         'url' => $data['url'],
-    ]));
+	]);
+}
 
+function respond_invalid_page($data=[]) {
+	return respond_view(render_template('/views/view_invalid_code.php'));
+}
+
+function respond_shortener_page($data = [])
+{
+	return respond_view(render_template('/views/view_shortener.php', $data));
 }
 
 function respond_json($data)
@@ -155,14 +173,4 @@ function respond_view($html)
 function redirect($url)
 {
     return new Response(302, ['location' => $url], '');
-}
-
-function wants_json($request)
-{
-
-}
-
-function isValidUrl($str)
-{
-    return filter_var($str, FILTER_VALIDATE_URL);
 }
