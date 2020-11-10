@@ -14,15 +14,14 @@ function sanitize_url(string $url)
 
 function validate_url($url)
 {
-    $url = strtolower(trim($url));
-
-    if (empty($url)) {
+    if (empty($url) || empty($url = strtolower(trim($url)))) {
         return false;
     }
 
+
     // TODO: 处理中文转义
 
-    return !!preg_match('/^(((ht|f)tps?):\/\/)?[\w-]+(\.[\w-]+)+([\w\-.,@?^=%&:/~+#]*[\w\-@?^=%&/~+#])?$/', $url);
+    return !!preg_match('/^(((ht|f)tps?):\/\/)?[\w-]+(\.[\w-]+)+([\w\-.,@?^=%&:\/~+#]*[\w\-@?^=%&\/~+#])?$/', $url);
 }
 
 function validate_code($code)
@@ -106,6 +105,13 @@ function int2string($num, string $chars): string
     $str = $chars[intval($num)] . $str;
 
     return $str;
+}
+
+
+function redirect_when_invalid(){
+    global $config;
+    
+    return $config['redirect_when_invalid'];
 }
 
 
