@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `short_urls` (
 -- ----------------------------
 -- Table structure for visits
 -- ----------------------------
-CREATE TABLE `visits` (
+CREATE TABLE IF NOT EXISTS `visits` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `short_url` varchar(20) NOT NULL,
   `ip_address` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '访问者的 ip',
