@@ -54,6 +54,10 @@ function save_shorturl($url, $code)
 
     $result = $stmt->execute();
 
+    if (!$result) {
+        return false;
+    }
+
     return [
         'url' => $url,
         'code' => $code,
