@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS `short_urls` (
 -- ----------------------------
 -- Table structure for visits
 -- ----------------------------
-CREATE TABLE IF NOT EXISTS `visits`;
 CREATE TABLE `visits` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `short_url` varchar(20) NOT NULL,
