@@ -8,15 +8,92 @@
     <div class="container">
         <h1>XXXXX</h1>
 
-        <form method="POST">
+        <form id="form" method="POST">
             <div>
-                <input type="text" />
+                <input id='url' name="url" value="<?php echo $data['url'] ?? '' ?>" oninput="onInputChange()"
+                    type="text" />
             </div>
-
-            <button>Submit</button>
+            <button onclick="onSubmit()" id="submitBtn" type="button">生成</button>
         </form>
+
+        <div class="message-container">
+            <div id="message"><?php echo $data['errmsg'] ?? '' ?></div>
+        </div>
+
+        <?php if (!empty($data['code'])): ?>
+
+        <div id="modal" class="result-container modal" onclick="onClickModal()">
+            <div class="modal-content">
+                <div class="result" style="display:flex;flex-direction:column;">
+                    <h3 style="color: green;">缩短成功</h3>
+                    <div class="input-button-group">
+                        <input id='shorturl' value="<?php echo $data['url'] ?? '' ?>" />
+                        <button id='copy' type="submit" onclick="onClickCopy()">复制</button>
+                    </div>
+                    <a href="<?php echo $data['shorturl'] ?? '' ?>" target="_blank" style="margin-top:30px">点击预览</a>
+                </div>
+            </div>
+        </div>
+
+        <?php endif; ?>
     </div>
 </body>
+
+<script>
+    function onSubmit() {
+        const input = document.getElementById('url');
+
+        const valid = /^(((ht|f)tps?):\/\/)?[\w-]+(\.[\w-]+)+([\w\-.,@?^=%&:/~+#]*[\w\-@?^=%&/~+#])?$/.test(input
+            .value);
+
+        if (!valid) {
+            showMessage('链接不正确')
+        } else {
+            const form = document.getElementById('form')
+            form.submit();
+        }
+    }
+
+    function showMessage(message) {
+        document.getElementById('message').innerText = message
+
+        setTimeout(() => {
+            document.getElementById('message').innerText = ''
+        }, 5000)
+    }
+
+    function onInputChange() {
+        const input = document.getElementById('url');
+
+        const valid = /^(((ht|f)tps?):\/\/)?[\w-]+(\.[\w-]+)+([\w\-.,@?^=%&:/~+#]*[\w\-@?^=%&/~+#])?$/.test(input
+            .value);
+
+        document.getElementById('submitBtn').disabled = !valid;
+    }
+
+    function onClickCopy() {
+
+        document.getElementById('shorturl').select();
+
+        const suc = document.execCommand("copy");
+
+        if (suc) {
+            const copyBtn = document.getElementById('copy')
+            copyBtn.innerText = '复制成功'
+            copyBtn.disabled = true;
+
+
+            setTimeout(() => {
+                copyBtn.innerText = '复制'
+                copyBtn.disabled = false;
+            }, 3000)
+        }
+    }
+
+    function onClickModal() {
+        document.getElementById('modal').parentNode.removeChild(document.getElementById('modal'))
+    }
+</script>
 
 <style>
     html {
@@ -25,6 +102,7 @@
         overflow-y: scroll;
         background-color: #dce7eb;
         color: rgba(48, 69, 92, 0.8);
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
 
     body {
@@ -57,6 +135,13 @@
     form {
         margin-top: 34px;
         width: 100%;
+        display: flex;
+    }
+
+    form div {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     input {
@@ -70,18 +155,51 @@
         border-radius: 4px;
     }
 
+    .input-button-group {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .message-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        color: red;
+    }
+
+    .result {
+        /* position: absolute;
+        top: 20%; */
+        padding: 40px;
+        width: 80%;
+        display: flex;
+        flex-direction: column;
+
+        background: white;
+    }
+
+    .preview {
+        margin-top: 40px;
+    }
+
+    .preview iframe {
+        width: 100%;
+        height: 300px;
+    }
+
+    .message {}
+
     button {
-      outline: 0;
-      background: #4caf50;
-      width: 100%;
-      border: 0;
-      border-radius: 4px;
-      padding: 15px;
-      color: #ffffff;
-      font-size: 14px;
-      -webkit-transition: all 0.3 ease;
-      transition: all 0.3 ease;
-      cursor: pointer;
+        outline: 0;
+        background: #4caf50;
+        border: 0;
+        border-radius: 4px;
+        padding: 15px;
+        color: #ffffff;
+        font-size: 14px;
+        -webkit-transition: all 0.3 ease;
+        transition: all 0.3 ease;
+        cursor: pointer;
     }
 
     button:hover,
@@ -90,8 +208,45 @@
         background: #43a047;
     }
 
+    /* button[disabled] {
+        background: rgb(218, 218, 218);
+    } */
+
     button {
-        margin-top: 24px;
+        width: 200px;
+        height: 74px;
+        margin-left: 20px;
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #00000055;
+        z-index: 9999;
+    }
+
+    .modal-content {
+        padding: 8px;
+
+
+        height: 50%;
+        width: 50%;
+
+        overflow: auto;
+
+        margin: auto;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
     }
 
     @media (min-width: 550px) {
