@@ -2,6 +2,16 @@
 
 $config = require __DIR__ . '/config.php';
 
+
+function config($name)
+{
+    global $config;
+
+    if (empty($name)) return $config;
+
+    return $config[$name] ?? null;
+}
+
 function sanitize_url(string $url)
 {
     $url = trim($url);
@@ -105,13 +115,6 @@ function int2string($num, string $chars): string
     $str = $chars[intval($num)] . $str;
 
     return $str;
-}
-
-
-function redirect_when_invalid(){
-    global $config;
-    
-    return $config['redirect_when_invalid'];
 }
 
 

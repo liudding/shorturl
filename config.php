@@ -31,6 +31,16 @@ return [
     'duplicate_tries' => 3,
 
     /**
+     * 当短链接无效时，系统行为
+     * redirect: 直接重定向到 redirect_url
+     * error_page: 展示错误页面
+     * redirect_in_error_page: 先展示错误页面，然后重定向到 redirect_url
+     */
+    'invalid_code_action' => '', // redirect, error_page, redirect_in_error_page 
+
+    'redirect_url' => '/',
+
+    /**
      * 数据库配置
      */
     'db' => [
