@@ -23,11 +23,11 @@
         <?php if (!empty($data['code'])): ?>
 
         <div id="modal" class="result-container modal" onclick="onClickModal()">
-            <div class="modal-content">
+            <div id="modal-content" class="modal-content">
                 <div class="result" style="display:flex;flex-direction:column;">
                     <h3 style="color: green;">缩短成功</h3>
                     <div class="input-button-group">
-                        <input id='shorturl' value="<?php echo $data['url'] ?? '' ?>" />
+                        <input id='shorturl' value="<?php echo $data['shorturl'] ?? '' ?>" />
                         <button id='copy' type="submit" onclick="onClickCopy()">复制</button>
                     </div>
                     <a href="<?php echo $data['shorturl'] ?? '' ?>" target="_blank" style="margin-top:30px">点击预览</a>
@@ -69,6 +69,11 @@
             .value);
 
         document.getElementById('submitBtn').disabled = !valid;
+    }
+
+
+    document.getElementById('modal-content').onclick = function (e) {
+        e.stopPropagation();
     }
 
     function onClickCopy() {
