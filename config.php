@@ -6,29 +6,28 @@ return [
      * 短链接的 base url
      * 如：https://shorturl.test
      */
-    'base_url' => '',
+    'base_url' => getenv('BASE_URL') ?? 'localhost',
 
     /**
      * 生成短链接码 code，所使用的字符集
      */
-    'charset' => '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'charset' => getenv('CHARSET') ?? '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' ,
 
     /**
      * 短链接码是否大小写敏感
      * 如果不敏感，则 charset 中不要同时包含大小写字母
      */
-    'case_sensitive' => true,
+    'case_sensitive' => getenv('CASE_SENSITIVE') ?? true,
 
     /**
      * 如果出现 code 碰撞，则将此后缀拼接到原 URL 后，再此生成 code
      */
-
-    'duplicate_suffix' => 'DUPLICATE',
+    'duplicate_suffix' => getenv('DUPLICATE_SUFFIX') ?? 'DUPLICATE',
 
     /**
      * 允许 code 碰撞的次数
      */
-    'duplicate_tries' => 3,
+    'duplicate_tries' => getenv('DUPLICATE_TRIES') ?? 3,
 
     /**
      * 当短链接无效时，系统行为
@@ -36,18 +35,18 @@ return [
      * error_page: 展示错误页面
      * redirect_in_error_page: 先展示错误页面，然后重定向到 redirect_url
      */
-    'invalid_code_action' => '', // redirect, error_page, redirect_in_error_page 
+    'invalid_code_action' => getenv('INVALID_CODE_ACTION') ?? 'error_page', // redirect, error_page, redirect_in_error_page 
 
-    'redirect_url' => '/',
+    'redirect_url' => getenv('REDIRECT_URL') ?? '/',
 
     /**
      * 数据库配置
      */
     'db' => [
-        'driver' => 'mysql',
-        'host' => '',
-        'database' => '',
-        'user' => '',
-        'password' => ''
+        'driver' => getenv('DB_DRIVER') ?? 'mysql',
+        'host' => getenv('DB_HOST') ?? 'localhost',
+        'database' => getenv('DB_DATABASE') ?? 'shorturl',
+        'user' => getenv('DB_USER') ?? 'root',
+        'password' => getenv('DB_PASSWORD') ?? '',
     ]
 ];
