@@ -6,36 +6,34 @@
 
 <body>
     <div class="container">
-        <h1>XXXXX</h1>
+        <h1>短链接</h1>
 
         <form id="form" method="POST">
             <div>
-                <input id='url' name="url" value="<?php echo $data['url'] ?? '' ?>" oninput="onInputChange()"
-                    type="text" />
+                <input id='url' name="url" value="<?php echo $_SESSION['url'] ?? '' ?>" oninput="onInputChange()"
+                    type="text" placeholder="请输入你的链接"/>
             </div>
             <button onclick="onSubmit()" id="submitBtn" type="button">生成</button>
         </form>
 
         <div class="message-container">
-            <div id="message"><?php echo $data['errmsg'] ?? '' ?></div>
+            <div id="message"></div>
         </div>
 
-        <?php if (!empty($data['code'])): ?>
 
-        <div id="modal" class="result-container modal" onclick="onClickModal()">
+        <div id="modal" class="result-container modal" onclick="onClickModal()" style="display:none;">
             <div id="modal-content" class="modal-content">
                 <div class="result" style="display:flex;flex-direction:column;">
                     <h3 style="color: green;">缩短成功</h3>
                     <div class="input-button-group">
-                        <input id='shorturl' value="<?php echo $data['shorturl'] ?? '' ?>" />
+                        <input id='shorturl' value="" />
                         <button id='copy' type="submit" onclick="onClickCopy()">复制</button>
                     </div>
-                    <a href="<?php echo $data['shorturl'] ?? '' ?>" target="_blank" style="margin-top:30px">点击预览</a>
+                    <a id="preview" href="" target="_blank" style="margin-top:30px">点击预览</a>
                 </div>
             </div>
         </div>
 
-        <?php endif; ?>
     </div>
 </body>
 
@@ -49,8 +47,24 @@
         if (!valid) {
             showMessage('链接不正确')
         } else {
-            const form = document.getElementById('form')
-            form.submit();
+            const data = {};
+
+            const fd = new FormData(document.getElementById('form'))
+            for (let entry of fd.entries()) {
+                data[entry[0]] = entry[1];
+            }
+
+            request('', data, (resp) => {
+                if (resp.errmsg) {
+                    showMessage(resp.errmsg);
+                }
+
+                if (resp.code) {
+                   document.getElementById('shorturl').value = resp.shorturl;
+                   document.getElementById('preview').href = resp.shorturl;
+                   document.getElementById('modal').style.display = 'block';
+                }
+            });
         }
     }
 
@@ -71,9 +85,10 @@
         document.getElementById('submitBtn').disabled = !valid;
     }
 
-
-    document.getElementById('modal-content').onclick = function (e) {
-        e.stopPropagation();
+    if (document.getElementById('modal-content')) {
+        document.getElementById('modal-content').onclick = function (e) {
+            e.stopPropagation();
+        }
     }
 
     function onClickCopy() {
@@ -96,7 +111,27 @@
     }
 
     function onClickModal() {
-        document.getElementById('modal').parentNode.removeChild(document.getElementById('modal'))
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function request(url, data, callback) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true)
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                console.log(xhr.responseText)
+
+                callback && callback(JSON.parse(xhr.responseText));
+            }
+        }
+
+        let params = [];
+        for (let key in data) {
+            params.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]))
+        }
+
+        xhr.send(params.join('&'))
     }
 </script>
 
