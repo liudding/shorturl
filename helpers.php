@@ -48,10 +48,8 @@ function validate_url($url)
 
 function validate_code($code)
 {
-    global $config;
-
     for ($i = 0; $i < strlen($code); $i++) {
-        if (strpos($config['charset'], $code[$i]) === false) {
+        if (strpos(config('charset'), $code[$i]) === false) {
             return false;
         }
     }
@@ -61,9 +59,7 @@ function validate_code($code)
 
 function generate_code($url)
 {
-    global $config;
-
-    $charset = $config['charset'];
+    $charset = config('charset');
 
     $hashInt = murmur_hash3($url);
 
@@ -181,3 +177,27 @@ function arr_get($array, $key)
 
     return $array;
 }
+
+
+
+
+function respond_json($data)
+{
+    return respond(200, json_encode($data), ['content-type' => 'application/json;charset=UTF-8']);
+}
+
+function respond_view($html)
+{
+    return respond(200, $html, ['Content-Type' => 'text/html;charset=UTF-8']);
+}
+
+function redirect($url)
+{
+    return respond(302, '', ['location' => $url]);
+}
+
+function respond($status=200, $content, $headers=[])
+{
+    return new Response($status, $headers, $content);
+}
+
