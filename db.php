@@ -1,23 +1,25 @@
 <?php
 
-$config = require __DIR__ . '/config.php';
-
 function db()
 {
     static $db;
-    global $config;
 
     if ($db) {
         return $db;
     }
 
-    $dsn = "{$config['db']['driver']}:host={$config['db']['host']};dbname={$config['db']['database']}";
+    $driver = config('db.driver');
+    $host = config('db.host');
+    $dbname = config('db.database');
+
+    $dsn = "{$driver}:host={$host};dbname={$dbname}";
 
     try {
-        $db = new PDO($dsn, $config['db']['user'], $config['db']['password']);
+        $db = new PDO($dsn, config('db.user'), config('db.password'));
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (PDOException $e) {
-        throw new \Exception('数据库连接失败: ' . $e->getMessage());
+        // throw new \Exception('数据库连接失败: ' . $e->getMessage());
+        throw $e;
     }
 
     return $db;
@@ -25,17 +27,14 @@ function db()
 
 function find_shorturl($code)
 {
-    global $config;
-
-    if ($config['case_sensitive']) {
-        $sql = 'SELECT code, url  FROM `short_urls` WHERE binary code= :code';
+    if (config('case_sensitive')) {
+        $sql = 'SELECT code, url  FROM `short_urls` WHERE binary code = :code';
     } else {
-        $sql = 'SELECT code, url  FROM `short_urls` WHERE code= :code';
+        $sql = 'SELECT code, url  FROM `short_urls` WHERE code = :code';
     }
-    
 
     $stmt = db()->prepare($sql);
-    $stmt->execute([":code" => $code]);
+    $stmt->execute([':code' => $code]);
 
     $stmt->setFetchMode(PDO::FETCH_ASSOC);
     $row = $stmt->fetch();
@@ -52,7 +51,13 @@ function save_shorturl($url, $code)
     $stmt->bindParam(':url', $url);
     $stmt->bindParam(':code', $code);
 
-    $result = $stmt->execute();
+    try {
+        $result = $stmt->execute();
+    } catch (PDOException $e) {
+        if (strstr($e->getMessage(), 'Duplicate')) {
+            throw new DuplicateCodeException();
+        }
+    }
 
     if (!$result) {
         return false;
