@@ -1,6 +1,9 @@
 <?php
 
+require_once __DIR__ . "/vendor/autoload.php";
+
 use RingCentral\Psr7\Response;
+use DeviceDetector\DeviceDetector;
 
 require_once __DIR__ . '/DuplicateCodeException.php';
 
@@ -56,11 +59,7 @@ function handle($request, $context): Response
 
         $code = make($data['url'], $data['code'] ?? null);
 
-        if (wants_json($request)) {
-            return respond_json($code);
-        } else {
-            return respond_view($code);
-        }
+        return respond_json($code);
     }
 
     $code = trim($uri, '/');
@@ -86,6 +85,43 @@ function visit_shorturl($code, $request)
 
     return redirect($short['url']);
 }
+
+function log_visit($short_url, $request)
+{
+    $headers    = $request->getHeaders();
+
+    $userAgent = isset($headers['User-Agent']) ? $headers['User-Agent'][0] : '';
+    $userAgent = substr($userAgent, 0, 255);
+
+    $dd = new DeviceDetector($userAgent);
+    $dd->parse();
+
+    if ($dd->isBot()) {
+        // handle bots,spiders,crawlers,...
+        $botInfo = $dd->getBot();
+
+        return;
+    }
+
+  
+    $referer = isset($headers['Referer']) ? $headers['Referer'] : '';
+    $referer = is_array($referer) ? $referer[0] : $referer;
+
+    $clientIP = $request->getAttribute('clientIP');
+
+    save_visit($short_url, [
+        'short_url' => $short_url['code'],
+        'ip_address' => $clientIP,
+        'device' => $dd->getDeviceName(),
+        'browser' => $dd->getClient()['name'],
+        'os' => $dd->getOs()['name'],
+        'user_agent' => $userAgent,
+        'referer' => $referer,
+    ]);
+    
+    increase_visits($short_url['code']);
+}
+
 
 /**
  * 生成并存储 short url
@@ -154,13 +190,13 @@ function shortener_submit($request)
 
     parse_str(trim($body), $data);
 
-
     if (!validate_url($data['url'] ?? null)) {
 
         return respond_json([
             'errmsg' => '无效的链接'
         ]);
     }
+
 
     $shortUrl = make($data['url']);
 

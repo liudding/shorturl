@@ -69,44 +69,26 @@ function save_shorturl($url, $code)
     ];
 }
 
-function log_visit($short_url, $request)
-{
-    save_visit($short_url, $request);
-    
-    increase_visits($short_url['code']);
-}
-
 function increase_visits($code)
 {
     $stmt = db()->prepare('update short_urls set visits = visits + 1 where code = :code');
 
-    $stmt->execute(['code' => $code]);
+    $stmt->execute([':code' => $code]);
 }
 
-function save_visit($shortUrl, $request)
+function save_visit($shortUrl, $data)
 {
-    $headers = $request->getHeaders();
-    $userAgent = isset($headers['User-Agent']) ? $headers['User-Agent'][0] : '';
-    $referer = isset($headers['Referer']) ? $headers['Referer'] : '';
-    $referer = is_array($referer) ? json_encode($referer) : $referer;
-
-    $clientIP = $request->getAttribute('clientIP');
-
-    $device = '';
-    $os = '';
-    $browser = '';
-
-    $sql = "INSERT INTO `visits`(`shorturl_id`, `ip_address`, `device`, `user_agent`, `referer`) values
-                                (:shorturl_id,:ip_address,:device,:browser,:os,:user_agent,:referer);";
+    $sql = "INSERT INTO `visits`(`short_url`, `ip_address`, `device`, `browser`, `os`, `user_agent`, `referer`) values
+                                (:short_url, :ip_address, :device, :browser, :os, :user_agent, :referer);";
     $stmt = db()->prepare($sql);
 
-    $stmt->bindParam(':short_url', $shortUrl['code']);
-    $stmt->bindParam(':ip_address', $clientIP);
-    $stmt->bindParam(':device', $device);
-    $stmt->bindParam(':browser', $browser);
-    $stmt->bindParam(':os', $os);
-    $stmt->bindParam(':user_agent', $userAgent);
-    $stmt->bindParam(':referer', $referer);
-
-    $result = $stmt->execute();
+    $stmt->execute([
+        ':short_url' => $shortUrl['code'],
+        ':ip_address' => $data['ip_address'] ?? '',
+        ':device' => $data['device'] ?? '',
+        ':browser' => $data['browser'] ?? '',
+        ':os' => $data['os'] ?? '',
+        ':user_agent' => $data['user_agent'] ?? '',
+        ':referer' => $data['referer'] ?? '',
+    ]);
 }
