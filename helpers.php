@@ -1,5 +1,7 @@
 <?php
 
+use RingCentral\Psr7\Response;
+
 $config = require __DIR__ . '/config.php';
 
 
@@ -9,7 +11,17 @@ function config($name)
 
     if (empty($name)) return $config;
 
-    return $config[$name] ?? null;
+    return arr_get($config, $name);
+}
+
+function get_referer($request)
+{
+    $headers = $request->getHeaders();
+
+    $referer = isset($headers['Referer']) ? $headers['Referer'] : '';
+    $referer = is_array($referer) ? $referer[0] : $referer;
+
+    return $referer;
 }
 
 function sanitize_url(string $url)
@@ -151,4 +163,21 @@ function detectOs()
 
 function detectBrowser()
 {
+}
+
+function arr_get($array, $key)
+{
+    if (strpos($key, '.') === false) {
+        return $array[$key] ?? null;
+    }
+
+    foreach (explode('.', $key) as $segment) {
+        if (is_array($array) && array_key_exists($segment, $array)) {
+            $array = $array[$segment];
+        } else {
+            return null;
+        }
+    }
+
+    return $array;
 }
