@@ -1,0 +1,56 @@
+# 阿里云云函数配置
+
+ROSTemplateFormatVersion: '2015-09-01'
+Transform: 'Aliyun::Serverless-2018-04-03'
+Resources:
+  shorturl:
+    Type: 'Aliyun::Serverless::Service'
+    Properties:
+      Description: 'a short url service based on aliyun function compute'
+      InternetAccess: true
+      Role: ''
+      VpcConfig:
+        VpcId: ''
+        VSwitchIds:
+          - ''
+        SecurityGroupId: ''
+      LogConfig:
+        Project: ''
+        Logstore: ''
+    shorturl:
+      Type: 'Aliyun::Serverless::Function'
+      Properties:
+        CodeUri: './'
+        Handler: index.handler
+        Runtime: php7.2
+        MemorySize: 128
+        Timeout: 10
+        Description: ''
+        InstanceConcurrency: 1
+        EnvironmentVariables:
+          'BASE_URL': 'http://localhost'
+          'DB_DRIVER': 'mysql'
+          'DB_HOST': ''
+          'DB_DATABASE': ''
+          'DB_USER': '',
+          'DB_PASSWORD': ''
+      Events:
+        httpTrigger:
+          Type: HTTP
+          Properties:
+            AuthType: ANONYMOUS
+            Methods: ['POST', 'GET']
+
+  domain.test: # 域名
+    Type: 'Aliyun::Serverless::CustomDomain'
+    Properties:
+      Protocol: HTTP,HTTPS
+      CertConfig:
+        CertName: 'YOUR CERT NAME'
+        PrivateKey: './your_private_key_path.pem'
+        Certificate: './your_certificate.pem'
+      RouteConfig:
+        Routes:
+          '/':
+            ServiceName: shorturl
+            FunctionName: shorturl
