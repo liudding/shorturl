@@ -2,6 +2,8 @@
 
 use RingCentral\Psr7\Response;
 
+require_once __DIR__ . '/DuplicateCodeException.php';
+
 $config = require_once __DIR__. '/config.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__. '/db.php';
@@ -16,9 +18,13 @@ function handler($request, $context): Response
 {
 	try {
 		return handle($request, $context);
+	} catch (PDOException $e) {
+		return respond_json([
+            'errmsg' => '服务器出错了' . $e->getMessage()
+        ]);
 	} catch (Exception $e) {
-		return respond_json($e);
-	}
+        return respond_json($e);
+    }
 }
 
 function handle($request, $context): Response
@@ -28,9 +34,8 @@ function handle($request, $context): Response
 
 	$method = $request->getMethod();
 
+    // FOR DEBUG
 	$uri = str_replace('2016-08-15/proxy/shorturl/shorturl', '', $uri);
-	
-	// return respond_json($uri);
 
     // TODO: throttle
 
@@ -58,21 +63,23 @@ function handle($request, $context): Response
         }
     }
 
+    $code = trim($uri, '/');
+
     // 访问 short url
-    return visit_shorturl($uri, $request);
+    return visit_shorturl($code, $request);
 }
 
 
 function visit_shorturl($code, $request)
 {
     if (empty($code)) {
-        return respond_invalid_page();
+        return respond_invalid_code($code);
     }
 
     $short = find_shorturl($code);
 
     if (!$short) {
-        return respond_invalid_page();
+        return respond_invalid_code($code);
     }
 
     log_visit($short, $request);
@@ -84,43 +91,57 @@ function visit_shorturl($code, $request)
  * 生成并存储 short url
  *
  * @param string $url 原始链接
+ * @param string $duplicate 是否允许重复生成短链接
  * @param string $code 自定义的 code
- * @return void
  */
-function make($url, $code = null)
+function make($url, $duplicate = false, $code = null)
 {
     $url = sanitize_url($url);
 
     if (!validate_url($url)) {
-        return;
+        return false;
     }
 
     if (!empty($code = trim($code)) && !validate_code($code)) {
-        return;
+        return false;
     }
 
     if (!empty($code)) { // 使用自定义的 code
-        return $code;
-    }
 
-    global $config;
+        return save_shorturl($url, $code);
+    }
 
     $tried = 0;
     $result = null;
 
     $key = $url;
 
-    while ($config['duplicate_tries'] > $tried) {
+    while (config('duplicate_tries') > $tried) {
         $code = generate_code($key);
 
         try {
             $result = save_shorturl($url, $code);
 
             break;
-        } catch (Exception $e) {
-            $tried++;
+        } catch (DuplicateCodeException $e) {
+            if ($duplicate) {
+                $tried++;
 
-            $key .= $config['duplicate_suffix'];
+                $key .= config('duplicate_suffix');
+            } else {
+                $shortUrl = find_shorturl($code);
+                if ($shortUrl['url'] !== $url) {
+                    $tried++;
+                    $key .= config('duplicate_suffix');
+                } else {
+                    $result = [
+                        'code' => $code,
+                        'url' => $url
+                    ];
+                    break; 
+                }
+            }
+            
         }
     }
 
@@ -133,44 +154,48 @@ function shortener_submit($request)
 
     parse_str(trim($body), $data);
 
-    if (!validate_url($data['url'])) {
-		// todo: error message
-		
-		return respond_shortener_page([
-            'result' => '请输入有效的链接',
-            'url' => $data['url'],
-            'errmsg' => '请输入有效的链接',
+
+    if (!validate_url($data['url'] ?? null)) {
+
+        return respond_json([
+            'errmsg' => '无效的链接'
         ]);
     }
 
-	$shortUrl = make($data['url']);
-	
-	return respond_shortener_page([
-		'result' => $shortUrl['code'],
+    $shortUrl = make($data['url']);
+
+    if (!$shortUrl) {
+        return respond_json([
+            'errmsg' => '生成失败'
+        ]);
+    }
+
+    return respond_json([
+        'code' => $shortUrl['code'],
+        'shorturl' => get_shorturl($shortUrl['code']),
         'url' => $data['url'],
-	]);
+    ]);
 }
 
-function respond_invalid_page($data=[]) {
-	return respond_view(render_template('/views/view_invalid_code.php'));
+function get_shorturl($code)
+{   
+   return rtrim(config('base_url'), '/') . DIRECTORY_SEPARATOR . $code;
 }
+
+
+function respond_invalid_code($code)
+{
+    if (config('invalid_code_action') === 'redirect') {
+        return redirect(config('redirect_url'));
+    }
+
+    if (config('invalid_code_action') === 'error_page' || config('invalid_code_action') === 'redirect_in_error_page') {
+        return respond_view(render_template('/views/view_invalid_code.php'));
+    }
+}
+
 
 function respond_shortener_page($data = [])
 {
 	return respond_view(render_template('/views/view_shortener.php', $data));
-}
-
-function respond_json($data)
-{
-    return new Response(200, ['content-type' => 'application/json;charset=UTF-8'], json_encode($data));
-}
-
-function respond_view($html)
-{
-    return new Response(200, ['Content-Type' => 'text/html;charset=UTF-8'], $html);
-}
-
-function redirect($url)
-{
-    return new Response(302, ['location' => $url], '');
 }
