@@ -43,7 +43,7 @@ function handle($request, $context): Response
     // TODO: throttle
 
     if ($uri === '/admin') {
-        // return
+        return handle_admin($request);
     }
 
     if ($uri === '/view/shortener') {
@@ -211,6 +211,11 @@ function shortener_submit($request)
         'shorturl' => get_shorturl($shortUrl['code']),
         'url' => $data['url'],
     ]);
+}
+
+function handle_admin($request)
+{
+    return respond_view(render_template('/views/view_admin.php'));
 }
 
 function get_shorturl($code)

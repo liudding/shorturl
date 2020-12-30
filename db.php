@@ -92,3 +92,65 @@ function save_visit($shortUrl, $data)
         ':referer' => $data['referer'] ?? '',
     ]);
 }
+
+
+function visits_traffic_last_days($short_urls, $days=30)
+{
+    if (is_array($short_urls)) {
+        $where = 'IN (:short_urls)';
+        $binds = [
+            ':short_urls' => $short_urls
+        ];
+    } else {
+        $where = ' = :short_url';
+        $binds = [
+            ':short_url' => $short_urls
+        ];
+    }
+
+    $sql = "SELECT 
+        DATE_FORMAT(`visited_at`, '%Y') as `year`, 
+        DATE_FORMAT(`visited_at`, '%m') as `month`,
+        DATE_FORMAT(`visited_at`, '%d') as `day`,
+        count(*) as `count`
+        FROM `visits`
+        WHERE `short_url` $where
+        GROUP BY `year`, `month`, `day`;";
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($binds);
+
+    $stmt->setFetchMode(PDO::FETCH_ASSOC);
+    return $stmt->fetch();
+}
+
+function visits_traffic_last_hours($short_urls, $hours=24)
+{
+    if (is_array($short_urls)) {
+        $where = 'IN (:short_urls)';
+        $binds = [
+            ':short_urls' => $short_urls
+        ];
+    } else {
+        $where = ' = :short_url';
+        $binds = [
+            ':short_url' => $short_urls
+        ];
+    }
+
+    $sql = "SELECT
+        DATE_FORMAT(`visited_at`, '%H') as `hour`,
+        count(*) as `count`
+        FROM `visits`
+        WHERE `short_url` $where
+        AND `visited_at` >= DATE_ADD(CURRENT_TIMESTAMP, INTERVAL - $hours HOUR)
+        GROUP BY `hour`;";
+
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($binds);
+
+    $stmt->setFetchMode(PDO::FETCH_ASSOC);
+    return $stmt->fetch();
+}
+
