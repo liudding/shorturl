@@ -12,3 +12,5 @@
 template.yml
 
 /vendor/
+
+.env
