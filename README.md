@@ -1,10 +1,13 @@
 # shorturl 基于阿里云云函数的短链接系统
 
-一款面向中小型企业的短链接系统实现方案。
+一款轻量级的 Serverless 短链接系统，直接部署到阿里云函数计算，无需独立购买服务器。
 
-## 安装
+## 安装部署
 
-1. 创建数据库，并构建如 `db.sql` 中的 schema
-2. 根据你的实际情况，配置 `config.php`
-3. 将其余 php 文件放到你的云函数中
-4. 在阿里云云函数中为此云函数配置自定义域名
+1. 安装 [Serverless Dev](https://serverless-devs.com) 并登录你的阿里云账号
+2. 创建数据库，并按 `db.sql` 创建表
+3. 根据你的实际情况，配置 `s.yaml` 和 `config.php`
+4. 安装 php 依赖。可以使用 `s build --use-sandbox` 或者手动 composer install 都行
+5. 执行 `s deploy` 开始部署
+6. 在阿里云函数计算中为此云函数配置自定义域名
+7. 完成

@@ -1,0 +1,16 @@
+{
+    "name": "ding/shorturl",
+    "description": "a short url service",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "liudding",
+            "email": "liuding.ld@foxmail.com"
+        }
+    ],
+    "require": {
+        "matomo/device-detector": "^4.0",
+        "nikic/fast-route": "^1.3"
+    }
+}

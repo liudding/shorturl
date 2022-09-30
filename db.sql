@@ -1,10 +1,16 @@
+-- ----------------------------
+-- 表结构
+-- 可自定义表名称，然后再在 config 文件里配置上相应的表名即可
+-- ----------------------------
+
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
 -- Table structure for shorturls
 -- ----------------------------
-CREATE TABLE IF NOT EXISTS `short_urls` (
+CREATE TABLE IF NOT EXISTS `shorturl_urls` (
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '短链接码',
   `url` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '原始链接',
   `visits` int unsigned NOT NULL DEFAULT '0' COMMENT '被访问的次数',
@@ -15,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `short_urls` (
 -- ----------------------------
 -- Table structure for visits
 -- ----------------------------
-CREATE TABLE IF NOT EXISTS `visits`;
+CREATE TABLE IF NOT EXISTS `shorturl_visits`;
 CREATE TABLE `visits` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `short_url` varchar(20) NOT NULL,

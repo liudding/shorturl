@@ -1,6 +1,28 @@
 <?php
 
+use RingCentral\Psr7\Response;
+
 $config = require __DIR__ . '/config.php';
+
+
+function config($name, $default = null)
+{
+    global $config;
+
+    if (empty($name)) return $config;
+
+    return arr_get($config, $name) ?? $default;
+}
+
+function get_referer($request)
+{
+    $headers = $request->getHeaders();
+
+    $referer = isset($headers['Referer']) ? $headers['Referer'] : '';
+    $referer = is_array($referer) ? $referer[0] : $referer;
+
+    return $referer;
+}
 
 function sanitize_url(string $url)
 {
@@ -14,23 +36,20 @@ function sanitize_url(string $url)
 
 function validate_url($url)
 {
-    $url = strtolower(trim($url));
-
-    if (empty($url)) {
+    if (empty($url) || empty($url = strtolower(trim($url)))) {
         return false;
     }
 
+
     // TODO: 处理中文转义
 
-    return !!preg_match('/^(((ht|f)tps?):\/\/)?[\w-]+(\.[\w-]+)+([\w\-.,@?^=%&:/~+#]*[\w\-@?^=%&/~+#])?$/', $url);
+    return !!preg_match('/^(((ht|f)tps?):\/\/)?[\w-]+(\.[\w-]+)+([\w\-.,@?^=%&:\/~+#]*[\w\-@?^=%&\/~+#])?$/', $url);
 }
 
 function validate_code($code)
 {
-    global $config;
-
     for ($i = 0; $i < strlen($code); $i++) {
-        if (strpos($config['charset'], $code[$i]) === false) {
+        if (strpos(config('charset'), $code[$i]) === false) {
             return false;
         }
     }
@@ -40,13 +59,11 @@ function validate_code($code)
 
 function generate_code($url)
 {
-    global $config;
-
-    $charset = $config['charset'];
+    $charset = config('charset');
 
     $hashInt = murmur_hash3($url);
 
-    return int2string($hashInt, $charset);
+    return int2string($hashInt, $charset, config('code_length', 6));
 }
 
 /**
@@ -63,9 +80,9 @@ function murmur_hash3(string $key, int $seed = 0): int
     $remainder = $i = 0;
     for ($bytes = $klen - ($remainder = $klen & 3); $i < $bytes;) {
         $k1 = $key[$i]
-         | ($key[++$i] << 8)
-         | ($key[++$i] << 16)
-         | ($key[++$i] << 24);
+            | ($key[++$i] << 8)
+            | ($key[++$i] << 16)
+            | ($key[++$i] << 24);
         ++$i;
         $k1 = (((($k1 & 0xffff) * 0xcc9e2d51) + ((((($k1 >= 0 ? $k1 >> 16 : (($k1 & 0x7fffffff) >> 16) | 0x8000)) * 0xcc9e2d51) & 0xffff) << 16))) & 0xffffffff;
         $k1 = $k1 << 15 | ($k1 >= 0 ? $k1 >> 17 : (($k1 & 0x7fffffff) >> 17) | 0x4000);
@@ -77,9 +94,12 @@ function murmur_hash3(string $key, int $seed = 0): int
     }
     $k1 = 0;
     switch ($remainder) {
-        case 3:$k1 ^= $key[$i + 2] << 16;
-        case 2:$k1 ^= $key[$i + 1] << 8;
-        case 1:$k1 ^= $key[$i];
+        case 3:
+            $k1 ^= $key[$i + 2] << 16;
+        case 2:
+            $k1 ^= $key[$i + 1] << 8;
+        case 1:
+            $k1 ^= $key[$i];
             $k1 = ((($k1 & 0xffff) * 0xcc9e2d51) + ((((($k1 >= 0 ? $k1 >> 16 : (($k1 & 0x7fffffff) >> 16) | 0x8000)) * 0xcc9e2d51) & 0xffff) << 16)) & 0xffffffff;
             $k1 = $k1 << 15 | ($k1 >= 0 ? $k1 >> 17 : (($k1 & 0x7fffffff) >> 17) | 0x4000);
             $k1 = ((($k1 & 0xffff) * 0x1b873593) + ((((($k1 >= 0 ? $k1 >> 16 : (($k1 & 0x7fffffff) >> 16) | 0x8000)) * 0x1b873593) & 0xffff) << 16)) & 0xffffffff;
@@ -94,13 +114,13 @@ function murmur_hash3(string $key, int $seed = 0): int
     return $h1;
 }
 
-function int2string($num, string $chars): string
+function int2string($num, string $chars, $length = 6): string
 {
     $str = '';
-    $len = strlen($chars);
-    while ($num >= $len) {
-        $mod = bcmod($num, $len);
-        $num = bcdiv($num, $len);
+    $charset = strlen($chars);
+    while ($num >= $charset) {
+        $mod = bcmod($num, $charset);
+        $num = $length == 4 ? bcdiv(bcdiv($num, $charset), $charset) : bcdiv($num, $charset);
         $str = $chars[$mod] . $str;
     }
     $str = $chars[intval($num)] . $str;
@@ -109,7 +129,7 @@ function int2string($num, string $chars): string
 }
 
 
-function render_template($template, $data=[]) 
+function render_template($template, $data = [])
 {
     ob_start();
 
@@ -125,21 +145,58 @@ function render_template($template, $data=[])
 
 function wants_json($request)
 {
-
 }
 
 
 function detectDevice()
 {
-    
 }
 
 
 function detectOs()
 {
-
 }
 
 function detectBrowser()
 {
+}
+
+function arr_get($array, $key)
+{
+    if (strpos($key, '.') === false) {
+        return $array[$key] ?? null;
+    }
+
+    foreach (explode('.', $key) as $segment) {
+        if (is_array($array) && array_key_exists($segment, $array)) {
+            $array = $array[$segment];
+        } else {
+            return null;
+        }
+    }
+
+    return $array;
+}
+
+
+
+
+function respond_json($data)
+{
+    return respond(200, json_encode($data), ['content-type' => 'application/json;charset=UTF-8']);
+}
+
+function respond_view($html)
+{
+    return respond(200, $html, ['Content-Type' => 'text/html;charset=UTF-8']);
+}
+
+function redirect($url)
+{
+    return respond(302, '', ['location' => $url]);
+}
+
+function respond($status = 200, $content, $headers = [])
+{
+    return new Response($status, $headers, $content);
 }

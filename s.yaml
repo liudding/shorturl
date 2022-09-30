@@ -1,0 +1,53 @@
+edition: 1.0.0
+name: shorturl
+access: "alifc"
+
+vars:
+  region: "cn-shanghai"
+  service:
+    name: "shorturl"
+    description: "短链接服务"
+
+services:
+  shorturl_index:
+    component: fc
+    props:
+      region: ${vars.region}
+      service:
+        name: shorturl
+        role: 
+        description: 短链接服务
+        internetAccess: true
+        vpcConfig:
+          securityGroupId: 
+          role: ''
+          vpcId: 
+          vSwitchIds:
+        ossMountConfig:
+          mountPoints: []
+        
+      function:
+        name: "index"
+        description: ""
+        runtime: php7.2
+        codeUri: ./code
+        handler: index.handler
+        memorySize: 128
+        timeout: 60
+        environmentVariables: 
+          BASE_URL: 
+          DB_DSN:  
+          DB_HOST: 
+          DB_USER: 
+          DB_PASSWORD: 
+      triggers:
+        - name: defaultTrigger
+          description: ''
+          type: http
+          qualifier: LATEST
+          config:
+            methods:
+              - GET
+              - POST
+            authType: anonymous
+            disableURLInternet: false
